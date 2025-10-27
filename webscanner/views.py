@@ -5,7 +5,6 @@ import requests
 from django.core.validators import URLValidator
 from django.core.exceptions import ValidationError
 from bs4 import BeautifulSoup
-import google.generativeai as genai
 import ipaddress, socket
 from urllib.parse import urlparse
 from .scanner import *

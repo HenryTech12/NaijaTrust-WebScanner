@@ -3,4 +3,6 @@ djangorestframework
 lxml
 requests
 google-genai
-beautifulsoup
+beautifulsoup4
+python-dotenv
+gunicorn

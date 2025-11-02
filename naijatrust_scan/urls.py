@@ -16,8 +16,14 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path,include
+from rest_framework.response import Response
+
+def home(request):
+    return Response({"message": "API is running!"}, status=200)
+
 
 urlpatterns = [
+    path('',home),
     path('admin/', admin.site.urls),
     path('api/',include('webscanner.urls'))
 ]

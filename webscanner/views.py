@@ -47,6 +47,7 @@ class APIScannerView(APIView):
                 
                 
                 
+                
                 body = {
                     "status":"success",
                     "code": 200,
@@ -54,14 +55,14 @@ class APIScannerView(APIView):
                     "is_valid": is_valid,
                     "safety": safe_data,
                     "privacy_link": privacy_link,
-                    "privacy_text":privacy_text,
+                    "privacy_text":privacy_text[:20],
                     "hidden_fields": hidden_forms,
                     "cookies": get_cookies()
                 }
-                ai_analyzer = generate_ai_summarizer(body)
-                body['ai_summary'] = ai_analyzer
-                body = json.dumps(body,indent=2)
-                print(ai_analyzer)
+               
+                ai_summary = generate_ai_summarizer(body)
+                body['ai_summary'] = ai_summary
+                body = json.dumps(body,indent=4)
                 return Response(body, status=200)
             else:
                 return Response({"error":"Invalid URL", "is_valid":is_valid},status=500)

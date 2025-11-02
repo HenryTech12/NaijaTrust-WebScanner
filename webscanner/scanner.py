@@ -4,27 +4,47 @@ from urllib.parse import urljoin
 import os
 from dotenv import load_dotenv
 import json
-
+from transformers import pipeline
+from lxml import html
 # Load environment variables from .env file
 load_dotenv()
 
 SCRAPINGBEE_API_KEY = os.environ.get('SCRAPINGBEE_API_KEY')
 genai_api_key = os.environ.get('GEMINI_API_KEY')
 
-mycookies = None
+mycookies = []
+hidden_forms=[]
 def fetch_js_page(url):
     api_url = "https://app.scrapingbee.com/api/v1/"
     params = {
         "api_key": SCRAPINGBEE_API_KEY,
         "url": url,
-        "render_js": "true"  # crucial for JS-heavy pages
+        "render_js": "true",             # Enable JavaScript rendering
+        "json_response": "true",         # Return body inside JSON
+        "wait_browser": "networkidle2",  # Wait until page fully loads
+        "block_ads": "true",             # Optional
     }
     try:
         r = requests.get(api_url, params=params)
-        mycookies = r.cookies
-        print(r.cookies)
+        data = r.json()
+        """
+        data = r.json()
+        # Extract headers and cookies if available
+        headers = data.get("headers", {})
+        cookies = headers.get("set-cookie")
+
+        print("Set-Cookie headers:", cookies)
+        """
+        html_content = data.get('body','')
+        tree = html.fromstring(html_content)
+
+        hidden_fields = tree.xpath('//input[@type="hidden"]/@name')
+        hidden_forms.append(hidden_fields)
+        cookies = r.headers.get("set-cookie")
+        mycookies.append(cookies)
+        
         r.raise_for_status()
-        return r.text, None  # return (html, error)
+        return html_content, None  # return (html, error)
     except Exception as e:
         return None, str(e)
     
@@ -75,22 +95,14 @@ def extract_privacy_text(soup):
 
 
 def find_hidden_forms(soup):
-    hidden_forms = []
-    for form in soup.find_all("form"):
-        hidden_inputs = []
-        for inp in form.find_all("input", {"type": "hidden"}):
-            hidden_inputs.append({"name": inp.get("name"), "value": inp.get("value")})
-        if hidden_inputs:
-            hidden_forms.append({"action": form.get("action"), "method": form.get("method", "get"), "hidden_inputs": hidden_inputs})
     return hidden_forms
-
 
 def generate_ai_summarizer(data):
     API_KEY = genai_api_key
     url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
 
     contents=f"""You are an AI assistant that performs two tasks:
-                1.Summarization: Provide a concise, factual, and neutral summary of the provided text. 
+                1.Summarization: Provide a natural summary of the site and also use the provided data as a metadata. 
                 Focus in key points, important details, and overall context
                 2.Risk scoring: Analyze the summarized content and assign risk score from 1(Very Low Risk) to 5(Very High Risk)
                 When assessing risk, consider factors such as:
@@ -106,6 +118,9 @@ def generate_ai_summarizer(data):
                     "summary": "Concise summary here...",
                     "risk_score": 2
                     }}
+                    i want a more natural summary not a technical one a summary that is comprehensible by the end users
+                    make sure the summary is something that is not technically inclined and it is easier for anyone to understand
+                    just tell the 
         """
     headers = {
         "x-goog-api-key": API_KEY,
@@ -140,8 +155,6 @@ def generate_ai_summarizer(data):
         summary = data['summary']
         risk_score = data['risk_score']
 
-        print("Summary:", summary)
-        print("Risk Score:", risk_score)
         return {"summary": summary, "risk_score":risk_score}
     else:
         print("Error:", response.status_code, response.text)

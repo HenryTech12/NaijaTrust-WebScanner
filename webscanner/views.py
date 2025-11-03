@@ -70,10 +70,13 @@ class APIScannerView(APIView):
 
         return {
             "url": url,
+            "status": "success",
+            "code":200,
             "safe_check": safety_data,
             "privacy_link": privacy_link,
             "hidden_fields": hidden_fields,
             "cookies": cookies,
+            "privacy_text": privacy_text,
             "summary": ai_summary.get("summary"),
             "risk_score": ai_summary.get("risk_score"),
         }

@@ -56,30 +56,28 @@ class APIScannerView(APIView):
         cookies = get_cookies()
         hidden_fields = find_hidden_forms()
         privacy_link = find_privacy_link(soup, url)
-        privacy_text = extract_privacy_text(soup)
+        if privacy_link is None:
+            privacy_text = 'No Privacy Policy Found'
+        else:
+            URL = privacy_link
+            resp = requests.get(URL, headers={"User-Agent": "policy-extractor/1.0"})    
+            soup = BeautifulSoup(resp.text, "lxml")
+            privacy_text  = (extract_privacy_text(soup))
 
         data = {
             "url": url,
+            "status":"success",
+            "code":200,
             "safe_check":safety_data,
             "hidden_fields":hidden_fields,
             "cookies": cookies,
             "privacy_link":privacy_link,
-            "privacy_text": privacy_text[:3000]
+            "privacy_text": privacy_text
         }
         ai_summary = await generate_ai_summarizer(data)
-
-        return {
-            "url": url,
-            "status": "success",
-            "code":200,
-            "safe_check": safety_data,
-            "privacy_link": privacy_link,
-            "hidden_fields": hidden_fields,
-            "cookies": cookies,
-            "privacy_text": privacy_text,
-            "summary": ai_summary.get("summary"),
-            "risk_score": ai_summary.get("risk_score"),
-        }
+        data.update({"ai_summary": ai_summary})
+        
+        return data
 
 # ========================
 # 🔒 HELPER FUNCTIONS

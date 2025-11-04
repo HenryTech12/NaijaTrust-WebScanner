@@ -42,6 +42,8 @@ async def fetch_js_page(url: str):
                 tree = html.fromstring(html_content)
                 fields = tree.xpath('//input[@type="hidden"]/@name')
                 hidden_forms.append(fields)
+                
+                print(data.get('privacy_text'))
 
                 cookies = resp.headers.get("set-cookie")
                 mycookies.append(cookies)
@@ -101,7 +103,15 @@ def extract_privacy_text(soup):
     main = soup.find(["article", "main"]) or soup.body
     return main.get_text("\n", strip=True) if main else soup.get_text("\n", strip=True)
 
-
+"""
+def extract_privacy_link(soup):
+    KEYWORDS = ['privacy','policy','data','gdpr']
+    for link in soup.find_all('a', href=True):
+        href = link['href'].lower()
+        text = link.get_text(strip=True).lower()
+        if any(word in href or word in text for word in KEYWORDS):
+            return urljoin(link['href'])
+"""
 # ✅ 5. AI summarization & risk scoring using Gemini API
 async def generate_ai_summarizer(data: str):
     url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
@@ -110,24 +120,31 @@ async def generate_ai_summarizer(data: str):
         "Content-Type": "application/json"
     }
 
-    prompt = f"""
-You are an AI assistant that performs two tasks:
-1. Summarization: Provide a natural, simple telling user why it is safe or not summary of the site using the provided text.
-2. Risk Scoring: Assign a risk score from 1 (Very Low Risk) to 5 (Very High Risk)
-   based on severity, likelihood, uncertainty, and impact on people or reputation.
-
-Make the summary simple and easy for anyone to understand.
-
-Text to analyze:
-{data}
-
-Output JSON Example:
-{{
-    "summary": "Concise, easy-to-understand summary.",
-    "risk_score": 2
-}}
-"""
-
+    output_format = """
+                {
+                    "summary": "<short summary>",
+                    "risk_score": "1-2 | 3 | 4-5",
+                    "data_collected": ["email", "cookies", "browsing_data", "location", ...]
+                }
+    """
+    prompt = """
+                You are a privacy text and data protection expert.
+                Analyze the following website privacy policy text and return:
+                1. A short, clear summary in plain English(Not more than 5 sentences) make sure the summary is natural and user-friendly telling the user about the website safety.
+                2. A "risk score" range from 1 to 5 that shows how risky the website's data collection practices are.
+                3. A list of detected data types collected(e.g email, cookies, location, browsing data).
+                
+                Classify risk score as:
+                "1-2" - collects minimal data, transparent usage, allow user control.
+                "3" - collects some personal data, shares with third parties, unclear retention period.
+                "4-5" - collects excessive or sensitive data, vague terms, unclear sharing, or lacks consent mechanisms.
+                
+                Return the ouput in this json format:
+                {output_format}
+                
+                Here is the privacy policy text to analyze:
+                {data}
+            """.format(output_format=output_format,data=data)
     payload = {
         "contents": [{"parts": [{"text": prompt}]}]
     }

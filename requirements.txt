@@ -7,3 +7,4 @@ python-dotenv
 gunicorn
 aiohttp>=3.9.5
 asgiref>=3.8.1
+django-cors-headers

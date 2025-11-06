@@ -69,6 +69,10 @@ def find_privacy_link(soup, base_url):
 
     if not soup:
         return {"error": "Soup object is None"}
+    
+    for a in soup.find_all("a", href=True):
+        if "privacy" in a["href"].lower():
+            return urljoin(base_url, a["href"])
 
     for a in soup.find_all("a", href=True):
         text = (a.get_text(" ", strip=True) or "").lower()
@@ -88,10 +92,6 @@ def find_privacy_link(soup, base_url):
             href = tag.get("href", "")
             if any(p in text for p in patterns) or any(p in href.lower() for p in patterns):
                 return urljoin(base_url, href or "")
-
-    for a in soup.find_all("a", href=True):
-        if "privacy" in a["href"].lower():
-            return urljoin(base_url, a["href"])
 
     return None
 
@@ -123,7 +123,7 @@ async def generate_ai_summarizer(data: str):
     output_format = """
                 {
                     "summary": "<short summary>",
-                    "risk_score": "1-2 | 3 | 4-5",
+                    "risk_score": "1",
                     "data_collected": ["email", "cookies", "browsing_data", "location", ...]
                 }
     """
@@ -131,13 +131,8 @@ async def generate_ai_summarizer(data: str):
                 You are a privacy text and data protection expert.
                 Analyze the following website privacy policy text and return:
                 1. A short, clear summary in plain English(Not more than 5 sentences) make sure the summary is natural and user-friendly telling the user about the website safety.
-                2. A "risk score" range from 1 to 5 that shows how risky the website's data collection practices are.
+                2. A "risk score" range from 1 to 10 that shows how risky the website is, check online data and check if its safe for people to use the website and based on that give a risk score.
                 3. A list of detected data types collected(e.g email, cookies, location, browsing data).
-                
-                Classify risk score as:
-                "1-2" - collects minimal data, transparent usage, allow user control.
-                "3" - collects some personal data, shares with third parties, unclear retention period.
-                "4-5" - collects excessive or sensitive data, vague terms, unclear sharing, or lacks consent mechanisms.
                 
                 Return the ouput in this json format:
                 {output_format}

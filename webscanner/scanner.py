@@ -114,7 +114,7 @@ def extract_privacy_link(soup):
 """
 # ✅ 5. AI summarization & risk scoring using Gemini API
 async def generate_ai_summarizer(data: str):
-    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
+    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
     headers = {
         "x-goog-api-key": GENAI_API_KEY,
         "Content-Type": "application/json"
